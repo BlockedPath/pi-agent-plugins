@@ -1,0 +1,81 @@
+name: Feature request
+description: >-
+  Propose an improvement to the Pi client, portable plugin support, or
+  contributor experience.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement. For portable behavior,
+        distinguish published specification requirements from Pi-specific
+        client policy.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What problem would this solve, and who encounters it?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the desired behavior and user experience.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Proposed scope
+      options:
+        - Agent Plugins specification conformance
+        - Agent Skills support
+        - MCP runtime integration
+        - Pi-specific client extension
+        - Installation or management
+        - Security or trust policy
+        - Documentation or contributor experience
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: specification
+    attributes:
+      label: Relevant specification section
+      description: >-
+        Include a URL or section number when the request affects portable
+        behavior.
+      placeholder: Agent Plugins 1.0.0 §…
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe workarounds or other designs you considered.
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Security, compatibility, and portability considerations
+      description: >-
+        Note potential execution, trust, filesystem, configuration, or
+        backwards-compatibility effects.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true
+        - label: >-
+            I identified whether this is portable behavior or Pi-specific
+            policy.
+          required: true

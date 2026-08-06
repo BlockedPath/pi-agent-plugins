@@ -1,0 +1,119 @@
+name: Bug report
+description: >-
+  Report a reproducible problem with discovery, validation, installation,
+  trust, or MCP integration.
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Search existing issues first and
+        remove secrets or private data from all examples and logs.
+
+  - type: input
+    id: version
+    attributes:
+      label: pi-agent-plugins version
+      description: >-
+        Run `npm view pi-agent-plugins version` or provide the installed
+        version.
+      placeholder: 0.1.4
+    validations:
+      required: true
+
+  - type: input
+    id: pi-version
+    attributes:
+      label: Pi version
+      placeholder: 0.84.0
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        Include your operating system, architecture, and Node.js version.
+      placeholder: macOS 15, arm64, Node.js 24.15.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Plugin discovery or loading
+        - Manifest validation
+        - Agent Skills
+        - MCP configuration or projection
+        - Trust or enablement
+        - Install or uninstall
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: >-
+        Describe the observed behavior and include the exact error message.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: >-
+        Provide the smallest safe plugin layout or commands that reproduce
+        the problem.
+      placeholder: |
+        1. Install ...
+        2. Run ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Diagnostic output
+      description: >-
+        Paste relevant `/plugin doctor` output or logs after removing secrets
+        and private paths.
+      render: text
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add links, screenshots, or related issues that may help.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched existing issues and pull requests.
+          required: true
+        - label: >-
+            I removed credentials, tokens, private URLs, and sensitive data.
+          required: true
+        - label: >-
+            I can reproduce this with a currently supported Pi and Node.js
+            version.
+          required: true
