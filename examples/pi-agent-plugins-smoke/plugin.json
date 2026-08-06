@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "pi-agent-plugins-smoke",
+  "version": "1.0.0",
+  "description": "End-to-end smoke test for Agent Skills and MCP loading in Pi.",
+  "license": "MIT",
+  "keywords": ["smoke-test", "agent-skills", "mcp"]
+}

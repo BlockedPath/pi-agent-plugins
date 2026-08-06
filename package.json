@@ -1,0 +1,71 @@
+{
+  "name": "pi-agent-plugins",
+  "version": "0.1.0",
+  "description": "Agent Plugins 1.0.0 client for the Pi coding agent. Discovers, validates, and loads portable plugins (skills + MCP servers) from plugin.json packages.",
+  "type": "module",
+  "license": "MIT",
+  "author": "BlockedPath",
+  "homepage": "https://github.com/BlockedPath/pi-agent-plugins#readme",
+  "bugs": {
+    "url": "https://github.com/BlockedPath/pi-agent-plugins/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BlockedPath/pi-agent-plugins.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "extension",
+    "agent-plugins",
+    "agent-skills",
+    "mcp",
+    "model-context-protocol",
+    "plugins"
+  ],
+  "pi": {
+    "extensions": [
+      "./extensions/index.ts"
+    ],
+    "image": "https://raw.githubusercontent.com/BlockedPath/pi-agent-plugins/main/assets/gallery.jpg"
+  },
+  "files": [
+    "assets",
+    "examples",
+    "extensions",
+    "src",
+    "README.md",
+    "CONFORMANCE.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --experimental-strip-types test/*.test.ts"
+  },
+  "dependencies": {
+    "tar": "^7.5.10",
+    "yaml": "^2.8.1"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-coding-agent": {
+      "optional": true
+    },
+    "@earendil-works/pi-tui": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.84.0",
+    "@earendil-works/pi-tui": "^0.84.0",
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.0"
+  }
+}

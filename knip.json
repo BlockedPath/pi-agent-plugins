@@ -1,0 +1,16 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "extensions/index.ts",
+    "test/*.test.ts"
+  ],
+  "project": [
+    "extensions/**/*.ts",
+    "src/**/*.ts",
+    "test/**/*.ts"
+  ],
+  "ignore": [
+    "src/plugin-command.ts",
+    "src/read-json.ts"
+  ]
+}
