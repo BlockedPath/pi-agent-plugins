@@ -1,4 +1,5 @@
 name: Release
+
 on:
   push:
     tags: ["v*"]
@@ -8,14 +9,17 @@ on:
         description: Existing v-prefixed release tag to publish
         required: true
         type: string
+
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
 concurrency:
   group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
+
 jobs:
   release:
-    runs-on: self-hosted
+    runs-on: [self-hosted, Windows, X64]
     timeout-minutes: 20
     permissions:
       contents: write
@@ -33,16 +37,27 @@ jobs:
           package-manager-cache: false
 
       - name: Verify tag matches package version
-        shell: bash
+        shell: pwsh
         run: |
-          case "$RELEASE_TAG" in
-            v[0-9]*.[0-9]*.[0-9]*) ;;
-            *) echo "invalid release tag: $RELEASE_TAG" >&2; exit 1 ;;
-          esac
-          PACKAGE_VERSION=$(node -p 'require("./package.json").version')
-          EXPECTED_TAG=$(printf 'v%s' "$PACKAGE_VERSION")
-          test "$EXPECTED_TAG" = "$RELEASE_TAG"
-          git tag --points-at HEAD | grep -Fx "$RELEASE_TAG"
+          if ($env:RELEASE_TAG -notmatch '^v\d+\.\d+\.\d+') {
+            Write-Error "invalid release tag: $env:RELEASE_TAG"
+            exit 1
+          }
+          $packageVersion = node -p 'require("./package.json").version'
+          $expectedTag = "v$packageVersion"
+          if ($expectedTag -ne $env:RELEASE_TAG) {
+            Write-Error (
+              "Tag $env:RELEASE_TAG does not match " +
+              "package.json version $packageVersion"
+            )
+            exit 1
+          }
+          $tagsAtHead = git tag --points-at HEAD
+          if (-not ($tagsAtHead -split "`r?`n" |
+              Where-Object { $_ -eq $env:RELEASE_TAG })) {
+            Write-Error "Tag $env:RELEASE_TAG not found at HEAD"
+            exit 1
+          }
 
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
@@ -50,10 +65,11 @@ jobs:
       - run: npm publish --provenance --access public
 
       - name: Create GitHub release
+        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
-          gh release create "$RELEASE_TAG"
+          gh release create "$env:RELEASE_TAG"
           --verify-tag
           --generate-notes
-          --title "pi-agent-plugins $RELEASE_TAG"
+          --title "pi-agent-plugins $env:RELEASE_TAG"
