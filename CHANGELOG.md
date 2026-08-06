@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+- Add the security policy to the published package documentation.
+- Remove CodeRabbit, npm-download, and Bundlephobia badges whose upstream providers returned errors.
+- Render the remaining badges as one inline HTML group for consistent horizontal layout across GitHub, npm, and Pi.dev.
+
 ## 0.1.4
 
 - Add a Contributor Covenant code of conduct and contribution guidelines.
