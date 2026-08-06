@@ -10,18 +10,6 @@
 [![Node Version](https://img.shields.io/node/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/pi-agent-plugins?label=bundle%20size)](https://bundlephobia.com/package/pi-agent-plugins)
 
-[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/BlockedPath/pi-agent-plugins?utm_source=oss&utm_medium=github&utm_campaign=BlockedPath%2Fpi-agent-plugins&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
-[![npm version](https://img.shields.io/npm/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
-[![npm downloads](https://img.shields.io/npm/dm/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub stars](https://img.shields.io/github/stars/BlockedPath/pi-agent-plugins?style=social)](https://github.com/BlockedPath/pi-agent-plugins/stargazers)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/BlockedPath/pi-agent-plugins/pulls)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
-[![pi compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev)
-[![CI](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml)
-[![Node Version](https://img.shields.io/node/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/pi-agent-plugins?label=bundle%20size)](https://bundlephobia.com/package/pi-agent-plugins)
-
 ![Agent Plugins gallery artwork](./assets/gallery.jpg)
 
 An [Agent Plugins 1.0.0](https://agent-plugins.org/) client extension for the [Pi coding agent](https://pi.dev/).
