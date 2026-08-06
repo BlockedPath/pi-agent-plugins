@@ -18,7 +18,7 @@ import {
 	statSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { x as extractTar } from "tar";
 
@@ -196,6 +196,38 @@ function firstPackResult(value: unknown): NpmPackResult | undefined {
 	return undefined;
 }
 
+/**
+ * Resolve how to invoke npm without shell metacharacter risks.
+ *
+ * On Windows, bare `npm` is a `.cmd` shim. `execFile` cannot launch `.cmd`
+ * files without `shell: true`, so prefer `node npm-cli.js` when present and
+ * only fall back to `npm.cmd` + shell.
+ */
+function resolveNpmInvocation(packArgs: string[]): {
+	command: string;
+	args: string[];
+	shell: boolean;
+} {
+	if (process.platform !== "win32") {
+		return { command: "npm", args: packArgs, shell: false };
+	}
+	const npmCli = join(
+		dirname(process.execPath),
+		"node_modules",
+		"npm",
+		"bin",
+		"npm-cli.js",
+	);
+	if (!existsSync(npmCli)) {
+		return { command: "npm.cmd", args: packArgs, shell: true };
+	}
+	return {
+		command: process.execPath,
+		args: [npmCli, ...packArgs],
+		shell: false,
+	};
+}
+
 /** Download an npm package without running package lifecycle scripts. */
 async function packNpm(
 	spec: string,
@@ -205,24 +237,22 @@ async function packNpm(
 ): Promise<void> {
 	let stdout: string;
 	try {
-		// On Windows, npm is a .cmd shim; execFile cannot find bare "npm".
-		const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
-		const result = await execFileAsync(
-			npmBin,
-			[
-				"pack",
-				"--json",
-				"--ignore-scripts",
-				"--pack-destination",
-				staging,
-				"--",
-				spec,
-			],
-			{
-				...(signal ? { signal } : {}),
-				env: { ...process.env, npm_config_ignore_scripts: "true" },
-			},
-		);
+		const packArgs = [
+			"pack",
+			"--json",
+			"--ignore-scripts",
+			"--pack-destination",
+			staging,
+			"--",
+			spec,
+		];
+		const npm = resolveNpmInvocation(packArgs);
+		const result = await execFileAsync(npm.command, npm.args, {
+			...(signal ? { signal } : {}),
+			shell: npm.shell,
+			env: { ...process.env, npm_config_ignore_scripts: "true" },
+			windowsHide: true,
+		});
 		stdout = result.stdout;
 	} catch (cause) {
 		const message = cause instanceof Error ? cause.message : String(cause);

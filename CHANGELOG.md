@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.7
+
+- Fix Windows `npm pack` install by invoking `node npm-cli.js` (or `npm.cmd`)
+  instead of bare `npm` under `execFile`.
+- Normalize `${PLUGIN_ROOT}` / `${PLUGIN_DATA}` cwd resolution so mixed path
+  separators do not break containment checks on Windows.
+- Normalize path equality assertions in the paths loader tests for Windows.
+
 ## 0.1.6
 
 - Render the cleaned badge group as one physical Markdown line because Pi.dev strips raw HTML from package READMEs.

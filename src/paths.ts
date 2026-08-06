@@ -140,10 +140,12 @@ export function resolveCwd(
 	if (!form) return undefined;
 
 	const expanded = expand(value, vars);
+	// Always resolve so placeholder expansion cannot leave mixed separators
+	// (e.g. `C:\root/inside` on Windows after substituting PLUGIN_*).
 	const absolute =
 		form.kind === "plugin-relative"
 			? resolve(vars.PLUGIN_ROOT, value.slice(2))
-			: expanded;
+			: resolve(expanded);
 	if (!isAbsolute(absolute)) return undefined;
 
 	const containmentRoot =
