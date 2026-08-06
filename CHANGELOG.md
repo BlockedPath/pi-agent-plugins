@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.8
+
+- Release from the self-hosted Windows runner using an `NPM_TOKEN` secret
+  (OIDC trusted publishing and Sigstore provenance were unreliable there).
+- Keep Windows `npm pack` and path-normalization fixes from 0.1.7.
+
 ## 0.1.7
 
 - Fix Windows `npm pack` install by invoking `node npm-cli.js` (or `npm.cmd`)
