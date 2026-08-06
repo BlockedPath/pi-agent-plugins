@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, normalize } from "node:path";
 import test from "node:test";
 
 import {
@@ -47,21 +47,28 @@ test("plugin-relative paths and cwd forms enforce containment", () => {
 	const data = tempDir();
 	mkdirSync(join(root, "inside"));
 
-	assert.equal(resolvePluginRelative(root, "./inside"), join(root, "inside"));
+	assert.equal(
+		normalize(resolvePluginRelative(root, "./inside") ?? ""),
+		normalize(join(root, "inside")),
+	);
 	assert.equal(resolvePluginRelative(root, "./../escape"), undefined);
 	assert.equal(
-		resolveCwd("${PLUGIN_ROOT}/inside", {
-			PLUGIN_ROOT: root,
-			PLUGIN_DATA: data,
-		}),
-		join(root, "inside"),
+		normalize(
+			resolveCwd("${PLUGIN_ROOT}/inside", {
+				PLUGIN_ROOT: root,
+				PLUGIN_DATA: data,
+			}) ?? "",
+		),
+		normalize(join(root, "inside")),
 	);
 	assert.equal(
-		resolveCwd("${PLUGIN_DATA}/cache", {
-			PLUGIN_ROOT: root,
-			PLUGIN_DATA: data,
-		}),
-		join(data, "cache"),
+		normalize(
+			resolveCwd("${PLUGIN_DATA}/cache", {
+				PLUGIN_ROOT: root,
+				PLUGIN_DATA: data,
+			}) ?? "",
+		),
+		normalize(join(data, "cache")),
 	);
 	assert.equal(
 		resolveCwd("/tmp", { PLUGIN_ROOT: root, PLUGIN_DATA: data }),

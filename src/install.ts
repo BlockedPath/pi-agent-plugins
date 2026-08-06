@@ -205,8 +205,10 @@ async function packNpm(
 ): Promise<void> {
 	let stdout: string;
 	try {
+		// On Windows, npm is a .cmd shim; execFile cannot find bare "npm".
+		const npmBin = process.platform === "win32" ? "npm.cmd" : "npm";
 		const result = await execFileAsync(
-			"npm",
+			npmBin,
 			[
 				"pack",
 				"--json",
