@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- Remove the duplicated badge block from the README rendered on npm.
+- Add `PROJECT_REFERENCE.md` as a durable architecture, operations, conformance, and release reference.
+
 ## 0.1.1
 
 - Preserve portable stdio `args`, `env`, and `cwd` semantics through a client-owned launcher instead of exposing plugin values to pi-mcp-adapter interpolation and secret-command handling.
