@@ -6,6 +6,9 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/BlockedPath/pi-agent-plugins/pulls)
 [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
 [![pi compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev)
+[![CI](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml)
+[![Node Version](https://img.shields.io/node/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/pi-agent-plugins?label=bundle%20size)](https://bundlephobia.com/package/pi-agent-plugins)
 
 ![Agent Plugins gallery artwork](./assets/gallery.jpg)
 
