@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Add Last Commit, Issues, and Conventional Commits badges to the README.
+
 ## 0.1.2
 
 - Remove the duplicated badge block from the README rendered on npm.

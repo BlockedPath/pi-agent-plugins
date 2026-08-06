@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-plugins",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Agent Plugins 1.0.0 client for the Pi coding agent. Discovers, validates, and loads portable plugins (skills + MCP servers) from plugin.json packages.",
   "type": "module",
   "license": "MIT",
