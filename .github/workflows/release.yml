@@ -4,9 +4,17 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing v-prefixed release tag to publish
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -20,11 +28,22 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+          ref: ${{ env.RELEASE_TAG }}
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
+      - name: Verify tag matches package version
+        run: |
+          case "$RELEASE_TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "invalid release tag: $RELEASE_TAG" >&2; exit 1 ;;
+          esac
+          PACKAGE_VERSION=$(node -p 'require("./package.json").version')
+          EXPECTED_TAG=$(printf 'v%s' "$PACKAGE_VERSION")
+          test "$EXPECTED_TAG" = "$RELEASE_TAG"
+          git tag --points-at HEAD | grep -Fx "$RELEASE_TAG"
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
@@ -33,7 +52,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: >-
-          gh release create "$GITHUB_REF_NAME"
+          gh release create "$RELEASE_TAG"
           --verify-tag
           --generate-notes
-          --title "pi-agent-plugins $GITHUB_REF_NAME"
+          --title "pi-agent-plugins $RELEASE_TAG"

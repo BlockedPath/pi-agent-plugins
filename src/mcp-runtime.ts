@@ -17,9 +17,9 @@ export interface ResolvedHttpServer {
 	url: string;
 }
 
-export type ResolvedRuntimeServer = ResolvedStdioServer | ResolvedHttpServer;
+type ResolvedRuntimeServer = ResolvedStdioServer | ResolvedHttpServer;
 
-export type RuntimeResolution =
+type RuntimeResolution =
 	| { value: ResolvedRuntimeServer; problem?: never }
 	| { value?: never; problem: string };
 

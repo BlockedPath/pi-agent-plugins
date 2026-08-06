@@ -70,7 +70,11 @@ function validateFrontmatter(
 	if (!isRecord(raw)) return { problem: "YAML frontmatter must be an object" };
 	const unknown = Object.keys(raw)
 		.filter((field) => !SKILL_FIELDS.has(field))
-		.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+		.sort((left, right) => {
+			if (left < right) return -1;
+			if (left > right) return 1;
+			return 0;
+		});
 	if (unknown.length > 0) {
 		return { problem: `unexpected frontmatter field "${unknown[0]}"` };
 	}

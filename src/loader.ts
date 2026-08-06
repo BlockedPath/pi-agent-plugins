@@ -158,14 +158,15 @@ export function qualifyServerName(
 ): string {
 	const encode = (value: string): string => {
 		let encoded = "";
-		for (const byte of Buffer.from(value, "utf8")) {
+		for (let index = 0; index < value.length; index += 1) {
+			const codeUnit = value.charCodeAt(index);
 			const safe =
-				(byte >= 0x61 && byte <= 0x7a) ||
-				(byte >= 0x30 && byte <= 0x39) ||
-				byte === 0x2d;
+				(codeUnit >= 0x61 && codeUnit <= 0x7a) ||
+				(codeUnit >= 0x30 && codeUnit <= 0x39) ||
+				codeUnit === 0x2d;
 			encoded += safe
-				? String.fromCharCode(byte)
-				: `_${byte.toString(16).padStart(2, "0")}`;
+				? value[index]
+				: `_${codeUnit.toString(16).padStart(4, "0")}`;
 		}
 		return encoded;
 	};

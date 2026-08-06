@@ -234,7 +234,7 @@ test("loader preserves component failure isolation", () => {
 test("server names use an injective adapter-safe encoding", () => {
 	assert.equal(
 		qualifyServerName("acme.tools", "github/api"),
-		"acme_2etools__github_2fapi",
+		"acme_002etools__github_002fapi",
 	);
 	assert.notEqual(
 		qualifyServerName("acme.tools", "a/b"),
@@ -243,5 +243,9 @@ test("server names use an injective adapter-safe encoding", () => {
 	assert.notEqual(
 		qualifyServerName("acme.tools", "__proto__"),
 		qualifyServerName("acme.tools", "proto"),
+	);
+	assert.notEqual(
+		qualifyServerName("acme.tools", "\uD800"),
+		qualifyServerName("acme.tools", "\uFFFD"),
 	);
 });

@@ -68,7 +68,7 @@ export interface StdioServer {
 	cwd?: string;
 }
 
-export interface HttpServer {
+interface HttpServer {
 	type: "streamable-http" | "sse";
 	url: string;
 	headers?: Record<string, string>;
