@@ -1,16 +1,7 @@
-<p>
-  <a href="https://www.npmjs.com/package/pi-agent-plugins"><img alt="npm version" src="https://img.shields.io/npm/v/pi-agent-plugins"></a>
-  <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
-  <a href="https://github.com/BlockedPath/pi-agent-plugins/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/BlockedPath/pi-agent-plugins?style=social"></a>
-  <a href="https://github.com/BlockedPath/pi-agent-plugins/commits/main"><img alt="Last Commit" src="https://img.shields.io/github/last-commit/BlockedPath/pi-agent-plugins"></a>
-  <a href="https://github.com/BlockedPath/pi-agent-plugins/issues"><img alt="Issues" src="https://img.shields.io/github/issues/BlockedPath/pi-agent-plugins"></a>
-  <a href="https://github.com/BlockedPath/pi-agent-plugins/pulls"><img alt="PRs Welcome" src="https://img.shields.io/badge/PRs-welcome-brightgreen.svg"></a>
-  <a href="https://www.conventionalcommits.org/en/v1.0.0/"><img alt="Conventional Commits" src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg"></a>
-  <a href="https://www.typescriptlang.org/"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-Ready-blue"></a>
-  <a href="https://pi.dev"><img alt="Pi compatible" src="https://img.shields.io/badge/pi-Compatible-blueviolet"></a>
-  <a href="https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://www.npmjs.com/package/pi-agent-plugins"><img alt="Node Version" src="https://img.shields.io/node/v/pi-agent-plugins"></a>
-</p>
+# pi-agent-plugins
+
+<!-- markdownlint-disable-next-line MD013 -->
+[![npm version](https://img.shields.io/npm/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![GitHub stars](https://img.shields.io/github/stars/BlockedPath/pi-agent-plugins?style=social)](https://github.com/BlockedPath/pi-agent-plugins/stargazers) [![Last Commit](https://img.shields.io/github/last-commit/BlockedPath/pi-agent-plugins)](https://github.com/BlockedPath/pi-agent-plugins/commits/main) [![Issues](https://img.shields.io/github/issues/BlockedPath/pi-agent-plugins)](https://github.com/BlockedPath/pi-agent-plugins/issues) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/BlockedPath/pi-agent-plugins/pulls) [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://www.conventionalcommits.org/en/v1.0.0/) [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/) [![Pi compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev) [![CI](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml) [![Node Version](https://img.shields.io/node/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
 
 ![Agent Plugins gallery artwork](./assets/gallery.jpg)
 

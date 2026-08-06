@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.6
+
+- Render the cleaned badge group as one physical Markdown line because Pi.dev strips raw HTML from package READMEs.
+- Add a top-level README heading.
+
 ## 0.1.5
 
 - Add the security policy to the published package documentation.
