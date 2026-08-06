@@ -20,22 +20,31 @@ Both publish steps are idempotent: a rerun skips a version that already exists.
 
 ## Publish a release
 
-1. Update `package.json`, `package-lock.json`, and `CHANGELOG.md`.
-2. Run:
+Start from a clean `main` branch synchronized with `origin/main`, then run one
+command with at least one changelog note:
 
-   ```bash
-   npm run typecheck
-   npm test
-   npm pack --dry-run
-   ```
+```bash
+npm run release -- patch "Describe the change"
+```
 
-3. Commit and push the version change to `main`.
-4. Create and push the matching tag, for example:
+Use `minor` or `major` instead of `patch` when appropriate. Each additional
+quoted argument becomes another changelog bullet:
 
-   ```bash
-   git tag v0.1.1
-   git push origin v0.1.1
-   ```
+```bash
+npm run release -- minor \
+  "Add portable plugin registries" \
+  "Improve Windows support"
+```
+
+Preview the calculated version and notes without changing anything:
+
+```bash
+npm run release -- patch --dry-run "Describe the change"
+```
+
+The script runs typecheck and tests, updates `package.json`,
+`package-lock.json`, and `CHANGELOG.md`, creates the release commit and
+annotated tag, then atomically pushes `main` and the tag.
 
 The pinned release workflow validates the tagged commit, publishes to npmjs
 and GitHub Packages, and creates the GitHub release. Provenance attestations
