@@ -1,10 +1,23 @@
 # Releasing
 
-The release workflow uses npm trusted publishing with GitHub Actions OIDC. It does not use a long-lived npm token.
+The release workflow publishes with the `NPM_TOKEN` GitHub Actions secret when
+set. If the secret is missing, it falls back to npm trusted publishing (OIDC).
 
-## One-time npm setup
+## One-time setup
 
-In the npm package settings for `pi-agent-plugins`, add a GitHub Actions trusted publisher with:
+### Option A — `NPM_TOKEN` secret (recommended on self-hosted)
+
+1. On npmjs.com → **Access Tokens** → create a **Granular Access Token**:
+   - Permission: **Read and write** for package `pi-agent-plugins`
+   - Bypass 2FA / automation-capable if offered
+2. In GitHub: repo **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `NPM_TOKEN`
+   - Value: the token (`npm_…`)
+
+### Option B — npm trusted publisher (OIDC, no long-lived token)
+
+In the npm package settings for `pi-agent-plugins`, add a GitHub Actions
+trusted publisher with:
 
 - Organization or user: `BlockedPath`
 - Repository: `pi-agent-plugins`

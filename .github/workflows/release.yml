@@ -65,11 +65,19 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
-      # Provenance/Sigstore Fulcio TLS fails on this self-hosted Windows
-      # runner (CA_CREATE_SIGNING_CERTIFICATE_ERROR). Publish via npm OIDC
-      # trusted publishing only (requires id-token: write).
+      # Prefer NPM_TOKEN (repo secret). Fall back to OIDC trusted publishing
+      # when the secret is unset. Provenance/Sigstore is omitted: Fulcio TLS
+      # fails on this self-hosted Windows runner.
       - name: Publish to npm
-        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        shell: pwsh
+        run: |
+          if ($env:NODE_AUTH_TOKEN) {
+            "//registry.npmjs.org/:_authToken=${env:NODE_AUTH_TOKEN}" |
+              Set-Content -Path .npmrc -Encoding utf8
+          }
+          npm publish --access public
 
       - name: Create GitHub release
         shell: pwsh
