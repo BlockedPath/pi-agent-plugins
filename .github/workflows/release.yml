@@ -33,9 +33,10 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
+          # No registry-url/token: setup-node defaults token to github.token,
+          # which npm treats as invalid auth (E404). Trusted publishing uses
+          # OIDC via id-token: write instead.
           node-version: 24
-          registry-url: https://registry.npmjs.org
-          package-manager-cache: false
 
       - name: Verify tag matches package version
         shell: pwsh
@@ -63,9 +64,12 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
+
       # Provenance/Sigstore Fulcio TLS fails on this self-hosted Windows
-      # runner (CA_CREATE_SIGNING_CERTIFICATE_ERROR).
-      - run: npm publish --access public
+      # runner (CA_CREATE_SIGNING_CERTIFICATE_ERROR). Publish via npm OIDC
+      # trusted publishing only (requires id-token: write).
+      - name: Publish to npm
+        run: npm publish --access public
 
       - name: Create GitHub release
         shell: pwsh
