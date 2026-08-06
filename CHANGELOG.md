@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+- Add a Contributor Covenant code of conduct and contribution guidelines.
+- Add structured bug-report and feature-request forms.
+- Add a pull-request template with validation and compatibility checks.
+
 ## 0.1.3
 
 - Add Last Commit, Issues, and Conventional Commits badges to the README.
