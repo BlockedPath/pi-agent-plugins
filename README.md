@@ -1,4 +1,12 @@
-[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/BlockedPath/pi-agent-plugins?utm _source=oss&utm_medium=github&utm_campaign=BlockedPath%2Fpi-agent-plugins&labelColor=1 71717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https:/ /coderabbit.ai) [![npm version](https://img.shields.io/npm/v/pi-agent-plugins)](https://www.npmjs.com/package /pi-agent-plugins) [![npm downloads](https://img.shields.io/npm/dm/pi-agent-plugins)](https://www.npmjs.com/pack age/pi-agent-plugins) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/lice nses/MIT) [![GitHub stars](https://img.shields.io/github/stars/BlockedPath/pi-agent-plugins?style=social)] (https://github.com/BlockedPath/pi-agent-plugins/stargazers) [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com /BlockedPath/pi-agent-plugins/pulls) [![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typesc riptlang.org/) [![pi compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev)
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/BlockedPath/pi-agent-plugins?utm_source=oss&utm_medium=github&utm_campaign=BlockedPath%2Fpi-agent-plugins&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+[![npm version](https://img.shields.io/npm/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
+[![npm downloads](https://img.shields.io/npm/dm/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/BlockedPath/pi-agent-plugins?style=social)](https://github.com/BlockedPath/pi-agent-plugins/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/BlockedPath/pi-agent-plugins/pulls)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
+[![pi compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev)
+
 ![Agent Plugins gallery artwork](./assets/gallery.jpg)
 
 An [Agent Plugins 1.0.0](https://agent-plugins.org/) client extension for the [Pi coding agent](https://pi.dev/).
