@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
-    runs-on: [self-hosted, Windows, X64]
+    runs-on: self-hosted
     timeout-minutes: 20
     permissions:
       contents: write
