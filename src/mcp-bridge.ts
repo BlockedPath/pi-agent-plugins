@@ -93,9 +93,13 @@ export function projectPlugin(plugin: LoadedPlugin): Projection {
 				: projectHttp(resolution.value);
 		if (Object.hasOwn(servers, qualifiedName)) {
 			diagnostics.push(
-				warning("11.3", `skipping duplicate MCP server name "${qualifiedName}"`, {
-					component,
-				}),
+				warning(
+					"11.3",
+					`skipping duplicate MCP server name "${qualifiedName}"`,
+					{
+						component,
+					},
+				),
 			);
 			continue;
 		}

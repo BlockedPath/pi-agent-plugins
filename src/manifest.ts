@@ -121,8 +121,9 @@ function applyExtensions(
 		return [warning("8.1", "ignoring non-object extensions field", { path })];
 	}
 
-	const namespaces: Record<string, Record<string, unknown>> =
-		Object.create(null);
+	const namespaces: Record<string, Record<string, unknown>> = Object.create(
+		null,
+	);
 	// §8.1: ignore unimplemented namespaces without validating their values.
 	if (!Object.hasOwn(value, PI_NAMESPACE)) {
 		manifest.extensions = namespaces;

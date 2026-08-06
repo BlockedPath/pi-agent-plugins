@@ -205,9 +205,15 @@ test("loader skips semantically invalid and unsupported MCP entries", () => {
 	const result = loadPlugin(root, { scope: "user" });
 	assert.ok("manifest" in result);
 	if (!("manifest" in result)) return;
-	assert.deepEqual(result.mcpServers.map((server) => server.name), ["valid"]);
+	assert.deepEqual(
+		result.mcpServers.map((server) => server.name),
+		["valid"],
+	);
 	for (const name of ["command", "cwd", "legacy", "headers", "dynamic"]) {
-		assert.ok(result.diagnostics.some((entry) => entry.component === name), name);
+		assert.ok(
+			result.diagnostics.some((entry) => entry.component === name),
+			name,
+		);
 	}
 });
 

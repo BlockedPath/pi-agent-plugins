@@ -17,7 +17,8 @@ function isRecord(value) {
 }
 
 function decodePayload(encoded) {
-	if (typeof encoded !== "string" || encoded === "") fail("missing launch payload");
+	if (typeof encoded !== "string" || encoded === "")
+		fail("missing launch payload");
 	let payload;
 	try {
 		payload = JSON.parse(Buffer.from(encoded, "base64url").toString("utf8"));
@@ -27,9 +28,15 @@ function decodePayload(encoded) {
 	if (!isRecord(payload)) fail("launch payload must be an object");
 	if (typeof payload.command !== "string" || payload.command === "")
 		fail("launch payload requires command");
-	if (!Array.isArray(payload.args) || payload.args.some((value) => typeof value !== "string"))
+	if (
+		!Array.isArray(payload.args) ||
+		payload.args.some((value) => typeof value !== "string")
+	)
 		fail("launch payload args must be strings");
-	if (!isRecord(payload.env) || Object.values(payload.env).some((value) => typeof value !== "string"))
+	if (
+		!isRecord(payload.env) ||
+		Object.values(payload.env).some((value) => typeof value !== "string")
+	)
 		fail("launch payload env must contain strings");
 	for (const key of ["cwd", "pluginRoot", "pluginData"]) {
 		if (typeof payload[key] !== "string" || payload[key] === "")
