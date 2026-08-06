@@ -133,7 +133,14 @@ test("skill discovery is immediate-only and strict Agent Skills compliant", () =
 	const skills = join(root, "skills");
 	skill(join(skills, "good"), "good");
 	skill(join(skills, "wrong-dir"), "different-name");
+	skill(join(skills, "blank-description"), "blank-description", "   ");
 	skill(join(skills, "parent", "nested"), "nested");
+	const unknown = join(skills, "unknown-field");
+	skill(unknown, "unknown-field");
+	writeFileSync(
+		join(unknown, "SKILL.md"),
+		"---\nname: unknown-field\ndescription: test\nclient-only: true\n---\n",
+	);
 
 	const result = discoverSkills(root);
 	assert.deepEqual(
@@ -141,6 +148,10 @@ test("skill discovery is immediate-only and strict Agent Skills compliant", () =
 		["good"],
 	);
 	assert.ok(result.diagnostics.some((d) => d.component === "wrong-dir"));
+	assert.ok(
+		result.diagnostics.some((d) => d.component === "blank-description"),
+	);
+	assert.ok(result.diagnostics.some((d) => d.component === "unknown-field"));
 });
 
 test("skill whose SKILL.md symlink escapes the plugin root is skipped", (t) => {
@@ -163,6 +174,43 @@ test("skill whose SKILL.md symlink escapes the plugin root is skipped", (t) => {
 	assert.match(result.diagnostics[0]?.message ?? "", /outside/);
 });
 
+test("loader skips semantically invalid and unsupported MCP entries", () => {
+	const root = tempDir();
+	writeFileSync(
+		join(root, "plugin.json"),
+		JSON.stringify({ $schema: PLUGIN_SCHEMA_ID, name: "runtime-filter" }),
+	);
+	writeFileSync(
+		join(root, "mcp.json"),
+		JSON.stringify({
+			$schema: "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+			mcpServers: {
+				valid: { type: "stdio", command: "node" },
+				command: { type: "stdio", command: "../escape" },
+				cwd: { type: "stdio", command: "node", cwd: "/tmp" },
+				legacy: { type: "sse", url: "https://example.com/sse" },
+				headers: {
+					type: "streamable-http",
+					url: "https://example.com/mcp",
+					headers: { "X-Public": "value" },
+				},
+				dynamic: {
+					type: "streamable-http",
+					url: "https://example.com/$env:HOME",
+				},
+			},
+		}),
+	);
+
+	const result = loadPlugin(root, { scope: "user" });
+	assert.ok("manifest" in result);
+	if (!("manifest" in result)) return;
+	assert.deepEqual(result.mcpServers.map((server) => server.name), ["valid"]);
+	for (const name of ["command", "cwd", "legacy", "headers", "dynamic"]) {
+		assert.ok(result.diagnostics.some((entry) => entry.component === name), name);
+	}
+});
+
 test("loader preserves component failure isolation", () => {
 	const root = tempDir();
 	writeFileSync(
@@ -183,9 +231,17 @@ test("loader preserves component failure isolation", () => {
 	assert.ok(result.diagnostics.some((d) => d.section === "7.2.2"));
 });
 
-test("server names are collision-resistant across plugin namespaces", () => {
+test("server names use an injective adapter-safe encoding", () => {
 	assert.equal(
 		qualifyServerName("acme.tools", "github/api"),
-		"acme-tools__github-api",
+		"acme_2etools__github_2fapi",
+	);
+	assert.notEqual(
+		qualifyServerName("acme.tools", "a/b"),
+		qualifyServerName("acme.tools", "a-b"),
+	);
+	assert.notEqual(
+		qualifyServerName("acme.tools", "__proto__"),
+		qualifyServerName("acme.tools", "proto"),
 	);
 });

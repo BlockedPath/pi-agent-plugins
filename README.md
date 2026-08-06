@@ -10,9 +10,23 @@
 [![Node Version](https://img.shields.io/node/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
 [![Bundle Size](https://img.shields.io/bundlephobia/minzip/pi-agent-plugins?label=bundle%20size)](https://bundlephobia.com/package/pi-agent-plugins)
 
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/BlockedPath/pi-agent-plugins?utm_source=oss&utm_medium=github&utm_campaign=BlockedPath%2Fpi-agent-plugins&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
+[![npm version](https://img.shields.io/npm/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
+[![npm downloads](https://img.shields.io/npm/dm/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/BlockedPath/pi-agent-plugins?style=social)](https://github.com/BlockedPath/pi-agent-plugins/stargazers)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/BlockedPath/pi-agent-plugins/pulls)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue)](https://www.typescriptlang.org/)
+[![pi compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev)
+[![CI](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/BlockedPath/pi-agent-plugins/actions/workflows/ci.yml)
+[![Node Version](https://img.shields.io/node/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
+[![Bundle Size](https://img.shields.io/bundlephobia/minzip/pi-agent-plugins?label=bundle%20size)](https://bundlephobia.com/package/pi-agent-plugins)
+
 ![Agent Plugins gallery artwork](./assets/gallery.jpg)
 
 An [Agent Plugins 1.0.0](https://agent-plugins.org/) client extension for the [Pi coding agent](https://pi.dev/).
+
+This is a community-maintained client implementation, not an official release of the Agent Plugins specification project.
 
 It lets Pi load portable plugin directories containing:
 
@@ -213,12 +227,14 @@ All declared paths must begin with `./` and remain within the filesystem-resolve
 | Transport | Status | Notes |
 | --- | --- | --- |
 | `stdio` | Supported | Bare command or contained `./` executable; arguments are always separate |
-| `streamable-http` | Supported without configured headers | OAuth remains client-managed by pi-mcp-adapter |
+| `streamable-http` | Supported without configured headers or adapter-sensitive environment syntax | OAuth remains client-managed by pi-mcp-adapter |
 | legacy `sse` | Not supported | Optional in Agent Plugins 1.0.0; skipped with a diagnostic |
 
 Legacy `sse` is deliberately skipped. Agent Plugins requires the declared transport for the **initial** connection attempt, while pi-mcp-adapter's URL connector begins with Streamable HTTP and only falls back to SSE for backwards compatibility. Treating an explicit `sse` entry as a generic URL would be non-conformant.
 
-Remote entries with configured `headers` are also skipped. Agent Plugins prohibits forwarding those headers to a different origin through redirects. The installed MCP runtime does not expose a redirect-policy hook, and Node forwards custom headers across cross-origin redirects. Refusing the entry is safer than leaking package data. Headerless Streamable HTTP remains supported.
+Remote entries with configured `headers` are also skipped. Agent Plugins prohibits forwarding those headers to a different origin through redirects. The installed MCP runtime does not expose a redirect-policy hook, and Node forwards custom headers across cross-origin redirects. Refusing the entry is safer than leaking package data.
+
+Headerless Streamable HTTP URLs containing `${NAME}`, `$env:NAME`, or `{env:NAME}` syntax are skipped as well. pi-mcp-adapter would expand those otherwise-valid URL strings using its host environment, which Agent Plugins §9.2 forbids. Other headerless Streamable HTTP endpoints remain supported.
 
 ## Security and containment
 
@@ -226,11 +242,12 @@ Remote entries with configured `headers` are also skipped. Agent Plugins prohibi
 - Symlink, junction, and traversal escapes are rejected at the narrowest applicable failure boundary.
 - `command` is one token. It is never shell-parsed or placeholder-expanded.
 - Only `${PLUGIN_ROOT}` and `${PLUGIN_DATA}` are expanded, once, in stdio `args`, `env` values, and `cwd`.
-- Plugin config cannot set the reserved `PLUGIN_ROOT` or `PLUGIN_DATA` environment names.
+- Stdio servers launch through a bundled client-owned shim so pi-mcp-adapter cannot reinterpret `${HOME}`, `$env:HOME`, `{env:HOME}`, or leading-`!` strings as native secret expressions or shell commands.
+- Plugin config cannot set the reserved `PLUGIN_ROOT` or `PLUGIN_DATA` environment names; the launcher applies platform environment-name semantics before setting them.
 - Non-loopback HTTP MCP endpoints must use HTTPS.
 - Configured remote headers are validated as literal package data, but header-bearing servers are not activated until the MCP runtime can enforce cross-origin redirect isolation.
 
-Review third-party plugin source before installing it. Skills can instruct the model to execute code, and trusted MCP servers run with the user's permissions.
+Review third-party plugin source before installing it. Skills can instruct the model to execute code, and trusted MCP servers run with the user's permissions. Agent Plugins v1 defines no signature, attestation, sandbox, permission-declaration, portable secret, audit-event, or plugin-dependency standard; this client does not imply those guarantees.
 
 ## Development
 

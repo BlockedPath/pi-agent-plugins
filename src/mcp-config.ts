@@ -88,7 +88,7 @@ function validateHeaders(value: unknown): {
 	if (!isPlainObject(value)) return { problem: "headers must be an object" };
 
 	const seen = new Set<string>();
-	const headers: Record<string, string> = {};
+	const headers: Record<string, string> = Object.create(null);
 	for (const [name, entry] of Object.entries(value)) {
 		if (!HEADER_NAME_PATTERN.test(name)) {
 			return {
@@ -278,7 +278,7 @@ export function validateMcpConfig(
 	}
 
 	// An empty mcpServers object is explicitly valid (§7.2.1).
-	const mcpServers: Record<string, PluginMcpServer> = {};
+	const mcpServers: Record<string, PluginMcpServer> = Object.create(null);
 	for (const [name, entry] of Object.entries(raw.mcpServers)) {
 		const { server, problem } = validateServerEntry(entry);
 		if (!server) {

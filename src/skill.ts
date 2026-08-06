@@ -7,6 +7,14 @@ import { parseDocument } from "yaml";
 import { warning, type Diagnostic } from "./types.ts";
 
 const SKILL_NAME = /^(?!.*--)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+const SKILL_FIELDS = new Set([
+	"name",
+	"description",
+	"license",
+	"compatibility",
+	"metadata",
+	"allowed-tools",
+]);
 
 interface SkillFrontmatter {
 	name: string;
@@ -60,6 +68,12 @@ function validateFrontmatter(
 	parentName: string,
 ): { value?: SkillFrontmatter; problem?: string } {
 	if (!isRecord(raw)) return { problem: "YAML frontmatter must be an object" };
+	const unknown = Object.keys(raw)
+		.filter((field) => !SKILL_FIELDS.has(field))
+		.sort((left, right) => (left < right ? -1 : left > right ? 1 : 0));
+	if (unknown.length > 0) {
+		return { problem: `unexpected frontmatter field "${unknown[0]}"` };
+	}
 	if (typeof raw.name !== "string")
 		return { problem: "name is required and must be a string" };
 	if (raw.name.length > 64 || !SKILL_NAME.test(raw.name)) {
@@ -74,7 +88,7 @@ function validateFrontmatter(
 		};
 	if (
 		typeof raw.description !== "string" ||
-		raw.description.length === 0 ||
+		raw.description.trim().length === 0 ||
 		raw.description.length > 1024
 	) {
 		return { problem: "description is required and must be 1-1024 characters" };

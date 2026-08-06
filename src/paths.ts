@@ -176,7 +176,12 @@ export function resolveCommand(
 	// Reject anything that looks like a path but is not plugin-relative: an
 	// absolute path, a parent traversal, or a nested relative path all fall
 	// outside the two permitted forms.
-	if (isAbsolute(command) || command.includes("/") || command.includes("\\"))
+	if (
+		isAbsolute(command) ||
+		command.includes("/") ||
+		command.includes("\\") ||
+		(process.platform === "win32" && /^[A-Za-z]:/.test(command))
+	)
 		return undefined;
 	return { kind: "bare", command };
 }

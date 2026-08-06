@@ -1,12 +1,12 @@
 # Agent Plugins 1.0.0 conformance
 
-This document maps the Agent Plugins 1.0.0 requirements to the implementation. The normative specification remains authoritative and currently labels version 1.0.0 as a Working Draft.
+This document maps the Agent Plugins 1.0.0 requirements to the implementation. The normative specification remains authoritative and labels version 1.0.0 as Published.
 
 ## Client profile
 
 - Supported Agent Plugins version: **1.0.0**
 - Supported components: **Agent Skills and MCP servers**
-- Supported MCP transports: **stdio and headerless Streamable HTTP**
+- Supported MCP transports: **stdio and literal-safe, headerless Streamable HTTP**
 - Optional legacy HTTP+SSE transport: **unsupported; entries are skipped and reported**
 - Implemented client-extension namespace: **`dev.pi.agent`**
 - MCP wire runtime: **pi-mcp-adapter**
@@ -73,8 +73,10 @@ Implementation: `src/skill.ts`, `src/loader.ts`, `extensions/index.ts`
 - [x] URL and headers remain literal.
 - [x] Stdio and headerless Streamable HTTP are supported through pi-mcp-adapter.
 - [x] Header-bearing remote entries are skipped because the runtime cannot enforce the required cross-origin redirect isolation.
+- [x] Remote URLs containing pi-mcp-adapter environment-expression syntax are skipped rather than being altered at runtime.
 - [x] Legacy `sse` is reported as unsupported and skipped.
-- [x] Server names are qualified by plugin name to avoid host-table collisions.
+- [x] Semantic path and runtime-support checks skip entries during discovery, before trust or activation.
+- [x] Server names use an injective adapter-safe encoding of both plugin and server names to avoid host-table collisions.
 - [x] Per-server runtime connection, authentication, and handshake failures remain isolated by pi-mcp-adapter.
 
 Implementation: `src/mcp-config.ts`, `src/mcp-bridge.ts`
@@ -95,7 +97,9 @@ Implementation: `src/manifest.ts`, `extensions/index.ts`
 - [x] User and project plugin instances with the same manifest name have separate `PLUGIN_DATA` directories.
 - [x] `PLUGIN_DATA` lives outside package contents and persists across update/uninstall.
 - [x] `PLUGIN_ROOT` is the absolute filesystem-resolved plugin root.
-- [x] Configured env overlays the runtime base, then client-owned `PLUGIN_ROOT` and `PLUGIN_DATA` are set last by the projected server definition.
+- [x] A bundled client-owned stdio launcher prevents pi-mcp-adapter from applying native environment interpolation or leading-`!` secret-command execution to plugin-authored values.
+- [x] Configured env overlays the runtime base, then client-owned `PLUGIN_ROOT` and `PLUGIN_DATA` are set last by the launcher.
+- [x] Environment overlay and reserved-name replacement use case-insensitive key equivalence on Windows and exact equivalence elsewhere.
 - [x] Plugin config cannot declare either reserved environment name.
 - [x] Expansion is one non-recursive textual pass.
 - [x] Only exact `${PLUGIN_ROOT}` and `${PLUGIN_DATA}` occurrences expand.
@@ -137,5 +141,7 @@ These behaviors are deliberately client-owned rather than represented as portabl
 
 1. Legacy `type: "sse"` is not supported because pi-mcp-adapter cannot be instructed to select legacy HTTP+SSE for the initial connection. Skipping it is allowed by §7.2.1 and required by §7.2.2 when a declared transport is unsupported.
 2. Remote entries with configured `headers` are validated but not activated. Agent Plugins forbids forwarding configured headers across an origin-changing redirect; pi-mcp-adapter currently exposes no redirect-policy hook, and Node forwards custom headers across such redirects. This is a runtime integration limitation rather than silently unsafe behavior.
-3. Agent Plugins does not define portable credential references. Authentication discovery and storage use pi-mcp-adapter's client-managed behavior.
-4. `/plugin trust` reloads Pi automatically. Trust granted from the startup confirmation prompt still requires one `/reload` because that event context cannot initiate Pi's reload flow.
+3. Headerless remote URLs containing `${NAME}`, `$env:NAME`, or `{env:NAME}` are skipped because pi-mcp-adapter would expand them using the host environment. Skipping prevents a §9.2 violation while retaining support for ordinary headerless Streamable HTTP endpoints.
+4. Agent Plugins does not define portable credential references. Authentication discovery and storage use pi-mcp-adapter's client-managed behavior.
+5. Agent Plugins v1 does not standardize signatures, provenance, permissions, sandboxing, audit events, enterprise policy, plugin dependencies, or a test harness. The client adds an MCP trust prompt as client policy but does not claim those future capabilities.
+6. `/plugin trust` reloads Pi automatically. Trust granted from the startup confirmation prompt still requires one `/reload` because that event context cannot initiate Pi's reload flow.

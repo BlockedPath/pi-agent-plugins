@@ -22,23 +22,27 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
-	expand,
-	resolveCommand,
-	resolveCwd,
-	type PluginVariables,
-} from "./paths.ts";
+	resolveRuntimeServer,
+	type ResolvedHttpServer,
+	type ResolvedStdioServer,
+} from "./mcp-runtime.ts";
+import { expand, type PluginVariables } from "./paths.ts";
 import { managedLedgerPath, piMcpConfigPath } from "./paths-client.ts";
 import {
 	type Diagnostic,
-	type HttpServer,
 	type LoadedPlugin,
 	type StdioServer,
 	error,
 	info,
 	warning,
 } from "./types.ts";
+
+const STDIO_LAUNCHER = fileURLToPath(
+	new URL("../bin/stdio-launcher.mjs", import.meta.url),
+);
 
 /** Subset of pi-mcp-adapter's ServerEntry that this bridge writes. */
 interface AdapterServerEntry {
@@ -65,7 +69,7 @@ export interface Projection {
  */
 export function projectPlugin(plugin: LoadedPlugin): Projection {
 	const diagnostics: Diagnostic[] = [];
-	const servers: Record<string, AdapterServerEntry> = {};
+	const servers: Record<string, AdapterServerEntry> = Object.create(null);
 
 	const vars: PluginVariables = {
 		PLUGIN_ROOT: plugin.root,
@@ -74,91 +78,68 @@ export function projectPlugin(plugin: LoadedPlugin): Projection {
 
 	for (const { config, name, qualifiedName } of plugin.mcpServers) {
 		const component = `${plugin.manifest.name}/${name}`;
-		const result =
-			config.type === "stdio"
-				? projectStdio(config, vars)
-				: projectHttp(config);
-
-		if (!result.entry) {
+		const resolution = resolveRuntimeServer(config, vars);
+		if (!resolution.value) {
 			diagnostics.push(
-				warning("7.2.2", `skipping server: ${result.problem}`, { component }),
+				warning("7.2.2", `skipping server: ${resolution.problem}`, {
+					component,
+				}),
 			);
 			continue;
 		}
-		servers[qualifiedName] = result.entry;
+		const entry =
+			resolution.value.kind === "stdio"
+				? projectStdio(config as StdioServer, resolution.value, vars)
+				: projectHttp(resolution.value);
+		if (Object.hasOwn(servers, qualifiedName)) {
+			diagnostics.push(
+				warning("11.3", `skipping duplicate MCP server name "${qualifiedName}"`, {
+					component,
+				}),
+			);
+			continue;
+		}
+		servers[qualifiedName] = entry;
 	}
 
 	return { servers, diagnostics };
 }
 
-type EntryProjection = { entry?: AdapterServerEntry; problem?: string };
-
-function projectHttp(config: HttpServer): EntryProjection {
-	if (config.type === "sse") {
-		// §7.2.2 rule 4 and §7.2.1 "Transport support": SSE support is OPTIONAL,
-		// and the declared type must be used for the *initial* attempt.
-		// pi-mcp-adapter always opens Streamable HTTP first and only falls back to
-		// SSE on a definitive incompatibility, so it cannot honour an SSE-first
-		// entry. Skipping keeps this client conformant; silently upgrading the
-		// transport would not.
-		return {
-			problem: "legacy HTTP+SSE transport is not supported by this client",
-		};
-	}
-
-	// Agent Plugins forbids forwarding configured headers across an origin
-	// change. pi-mcp-adapter currently exposes no redirect-policy hook, while
-	// Node fetch forwards custom headers across such redirects. Refuse these
-	// entries rather than risk violating §7.2.1. Headerless Streamable HTTP is
-	// still fully supported.
-	if (config.headers && Object.keys(config.headers).length > 0) {
-		return {
-			problem:
-				"configured HTTP headers are not supported safely by the installed MCP runtime",
-		};
-	}
-	return { entry: { url: config.url } };
+function projectHttp(config: ResolvedHttpServer): AdapterServerEntry {
+	return { url: config.url };
 }
 
 function projectStdio(
 	config: StdioServer,
+	resolved: ResolvedStdioServer,
 	vars: PluginVariables,
-): EntryProjection {
-	const command = resolveCommand(vars.PLUGIN_ROOT, config.command);
-	if (!command) {
-		return {
-			problem: `command "${config.command}" is not a bare name or a contained ./ path`,
-		};
-	}
-
-	// §7.2.1: cwd defaults to the plugin root when omitted.
-	let cwd = vars.PLUGIN_ROOT;
-	if (config.cwd !== undefined) {
-		const resolved = resolveCwd(config.cwd, vars);
-		if (!resolved)
-			return {
-				problem: `cwd "${config.cwd}" is not a permitted or contained form`,
-			};
-		cwd = resolved;
-	}
-
-	// §9.1: configured env overlays the base environment, then the client sets
-	// the reserved variables last so a plugin cannot shadow them.
-	const env: Record<string, string> = {};
-	for (const [key, value] of Object.entries(config.env ?? {}))
-		env[key] = expand(value, vars);
-	env.PLUGIN_ROOT = vars.PLUGIN_ROOT;
-	env.PLUGIN_DATA = vars.PLUGIN_DATA;
-
-	const entry: AdapterServerEntry = { command: command.command, cwd, env };
-	// §9.2: expansion applies to args and env values, never to env keys.
-	if (config.args) entry.args = config.args.map((arg) => expand(arg, vars));
-	return { entry };
+): AdapterServerEntry {
+	const env = Object.fromEntries(
+		Object.entries(config.env ?? {}).map(([key, value]) => [
+			key,
+			expand(value, vars),
+		]),
+	);
+	const payload = {
+		command: resolved.command,
+		args: (config.args ?? []).map((arg) => expand(arg, vars)),
+		env,
+		cwd: resolved.cwd,
+		pluginRoot: vars.PLUGIN_ROOT,
+		pluginData: vars.PLUGIN_DATA,
+	};
+	return {
+		command: process.execPath,
+		args: [
+			STDIO_LAUNCHER,
+			Buffer.from(JSON.stringify(payload), "utf8").toString("base64url"),
+		],
+	};
 }
 
 /** Project every enabled plugin, reporting cross-plugin name collisions. */
 export function projectAll(plugins: readonly LoadedPlugin[]): Projection {
-	const servers: Record<string, AdapterServerEntry> = {};
+	const servers: Record<string, AdapterServerEntry> = Object.create(null);
 	const diagnostics: Diagnostic[] = [];
 
 	for (const plugin of plugins) {
@@ -166,7 +147,7 @@ export function projectAll(plugins: readonly LoadedPlugin[]): Projection {
 		const projection = projectPlugin(plugin);
 		diagnostics.push(...projection.diagnostics);
 		for (const [name, entry] of Object.entries(projection.servers)) {
-			if (name in servers) {
+			if (Object.hasOwn(servers, name)) {
 				diagnostics.push(
 					warning("11.3", `skipping duplicate MCP server name "${name}"`, {
 						component: plugin.manifest.name,

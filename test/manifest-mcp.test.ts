@@ -169,6 +169,37 @@ test("HTTP URL and header restrictions are enforced", () => {
 	);
 });
 
+test("arbitrary JSON object keys survive validation", () => {
+	const env: Record<string, string> = Object.create(null);
+	env.__proto__ = "literal";
+	const servers: Record<string, unknown> = Object.create(null);
+	servers.__proto__ = { type: "stdio", command: "node", env };
+	const result = validateMcpConfig(
+		{ $schema: MCP_SCHEMA_ID, mcpServers: servers },
+		"/plugin/mcp.json",
+		PLUGIN_SCHEMA_ID,
+	);
+	assert.ok(Object.hasOwn(result.value?.mcpServers ?? {}, "__proto__"));
+	const server = result.value?.mcpServers.__proto__;
+	assert.equal(server?.type, "stdio");
+	if (server?.type === "stdio") {
+		assert.ok(Object.hasOwn(server.env ?? {}, "__proto__"));
+		assert.equal(server.env?.__proto__, "literal");
+	}
+
+	const headers: Record<string, string> = Object.create(null);
+	headers.__proto__ = "literal";
+	const http = validateServerEntry({
+		type: "streamable-http",
+		url: "https://example.com/mcp",
+		headers,
+	});
+	assert.ok(http.server?.type === "streamable-http");
+	if (http.server?.type === "streamable-http") {
+		assert.ok(Object.hasOwn(http.server.headers ?? {}, "__proto__"));
+	}
+});
+
 test("top-level MCP failure disables MCP, while one bad entry leaves valid siblings", () => {
 	const topLevel = validateMcpConfig(
 		{

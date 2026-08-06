@@ -12,6 +12,7 @@ import { basename, join } from "node:path";
 
 import { loadManifest } from "./manifest.ts";
 import { loadMcpConfig } from "./mcp-config.ts";
+import { resolveRuntimeServer } from "./mcp-runtime.ts";
 import {
 	isContainedResolved,
 	resolveExisting,
@@ -155,8 +156,20 @@ export function qualifyServerName(
 	pluginName: string,
 	serverName: string,
 ): string {
-	const safe = (value: string) => value.replace(/[^A-Za-z0-9_-]/g, "-");
-	return `${safe(pluginName)}__${safe(serverName)}`;
+	const encode = (value: string): string => {
+		let encoded = "";
+		for (const byte of Buffer.from(value, "utf8")) {
+			const safe =
+				(byte >= 0x61 && byte <= 0x7a) ||
+				(byte >= 0x30 && byte <= 0x39) ||
+				byte === 0x2d;
+			encoded += safe
+				? String.fromCharCode(byte)
+				: `_${byte.toString(16).padStart(2, "0")}`;
+		}
+		return encoded;
+	};
+	return `${encode(pluginName)}__${encode(serverName)}`;
 }
 
 /** Load one plugin from a directory containing `plugin.json`. */
@@ -207,6 +220,7 @@ export function loadPlugin(
 	const { skills, diagnostics: skillDiagnostics } = discoverSkills(root);
 	diagnostics.push(...skillDiagnostics);
 
+	const dataDir = pluginDataDir(manifest.name, options.scope, root);
 	const mcpPath = resolveInRoot(root, "mcp.json");
 	const mcpServers: LoadedMcpServer[] = [];
 	if (mcpPath) {
@@ -215,6 +229,19 @@ export function loadPlugin(
 		for (const [name, config] of Object.entries(
 			mcpResult.value?.mcpServers ?? {},
 		)) {
+			const resolution = resolveRuntimeServer(config, {
+				PLUGIN_ROOT: root,
+				PLUGIN_DATA: dataDir,
+			});
+			if (!resolution.value) {
+				diagnostics.push(
+					warning("7.2.2", `skipping MCP server: ${resolution.problem}`, {
+						path: mcpPath,
+						component: name,
+					}),
+				);
+				continue;
+			}
 			mcpServers.push({
 				name,
 				qualifiedName: qualifyServerName(manifest.name, name),
@@ -230,7 +257,7 @@ export function loadPlugin(
 	const plugin: LoadedPlugin = {
 		manifest,
 		root,
-		dataDir: pluginDataDir(manifest.name, options.scope, root),
+		dataDir,
 		scope: options.scope,
 		enabled: !options.disabled?.has(manifest.name),
 		skills,

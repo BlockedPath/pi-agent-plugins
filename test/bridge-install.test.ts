@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	realpathSync,
+	writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
 import { install, parseSource } from "../src/install.ts";
+import { qualifyServerName } from "../src/loader.ts";
 import {
 	prepareDataDirs,
 	projectPlugin,
@@ -34,7 +42,7 @@ function readJson<T>(path: string): T {
 }
 
 function pluginWith(servers: Record<string, PluginMcpServer>): LoadedPlugin {
-	const root = tempDir();
+	const root = realpathSync(tempDir());
 	const dataDir = join(tempDir(), "data");
 	mkdirSync(join(root, "bin"), { recursive: true });
 	return {
@@ -46,33 +54,63 @@ function pluginWith(servers: Record<string, PluginMcpServer>): LoadedPlugin {
 		skills: [],
 		mcpServers: Object.entries(servers).map(([name, config]) => ({
 			name,
-			qualifiedName: `test-plugin__${name}`,
+			qualifiedName: qualifyServerName("test.plugin", name),
 			config,
 		})),
 		diagnostics: [],
 	};
 }
 
-test("stdio projection expands only portable variables and sets reserved env last", () => {
+test("stdio launcher preserves opaque values and applies portable variables", () => {
+	const script = [
+		"process.stdout.write(JSON.stringify({",
+		"arg: process.argv[1],",
+		"cache: process.env.CACHE,",
+		"literal: process.env.HOME_LITERAL,",
+		"bang: process.env.BANG,",
+		"root: process.env.PLUGIN_ROOT,",
+		"data: process.env.PLUGIN_DATA,",
+		"cwd: process.cwd()",
+		"}))",
+	].join("");
 	const plugin = pluginWith({
 		local: {
 			type: "stdio",
-			command: "./bin/server",
-			args: ["${PLUGIN_ROOT}/config", "${HOME}"],
-			env: { CACHE: "${PLUGIN_DATA}/cache", HOME_LITERAL: "${HOME}" },
+			command: "node",
+			args: ["-e", script, "${HOME}"],
+			env: {
+				CACHE: "${PLUGIN_DATA}/cache",
+				HOME_LITERAL: "${HOME}",
+				BANG: "!printf should-not-run",
+			},
 			cwd: "${PLUGIN_ROOT}",
 		},
 	});
 
 	const projection = projectPlugin(plugin);
-	const entry = projection.servers["test-plugin__local"];
-	assert.equal(entry?.command, join(plugin.root, "bin", "server"));
-	assert.deepEqual(entry?.args, [`${plugin.root}/config`, "${HOME}"]);
-	assert.equal(entry?.cwd, plugin.root);
-	assert.equal(entry?.env?.CACHE, `${plugin.dataDir}/cache`);
-	assert.equal(entry?.env?.HOME_LITERAL, "${HOME}");
-	assert.equal(entry?.env?.PLUGIN_ROOT, plugin.root);
-	assert.equal(entry?.env?.PLUGIN_DATA, plugin.dataDir);
+	const entry = projection.servers[qualifyServerName("test.plugin", "local")];
+	assert.equal(entry?.command, process.execPath);
+	assert.equal(entry?.env, undefined);
+	assert.equal(entry?.cwd, undefined);
+	const launched = spawnSync(entry?.command ?? "", entry?.args ?? [], {
+		encoding: "utf8",
+	});
+	assert.equal(launched.status, 0, launched.stderr);
+	let output: unknown;
+	try {
+		output = JSON.parse(launched.stdout);
+	} catch (cause) {
+		assert.fail(`launcher returned invalid JSON: ${String(cause)}`);
+	}
+	assert.deepEqual(output, {
+		arg: "${HOME}",
+		cache: `${plugin.dataDir}/cache`,
+		literal: "${HOME}",
+		bang: "!printf should-not-run",
+		root: plugin.root,
+		data: plugin.dataDir,
+		cwd: plugin.root,
+	});
 });
 
 test("unwritable PLUGIN_DATA skips only stdio entries", () => {
@@ -92,7 +130,7 @@ test("unwritable PLUGIN_DATA skips only stdio entries", () => {
 	assert.match(prepared.diagnostics[0]?.message ?? "", /not writable/);
 });
 
-test("headerless Streamable HTTP is projected; unsafe headers and declared SSE are skipped", () => {
+test("only literal-safe headerless Streamable HTTP is projected", () => {
 	const plugin = pluginWith({
 		http: { type: "streamable-http", url: "https://example.com/mcp" },
 		headers: {
@@ -101,18 +139,38 @@ test("headerless Streamable HTTP is projected; unsafe headers and declared SSE a
 			headers: { "X-Test": "${TOKEN}" },
 		},
 		legacy: { type: "sse", url: "https://example.com/sse" },
+		dynamic: {
+			type: "streamable-http",
+			url: "https://example.com/${HOME}",
+		},
 	});
 	const projection = projectPlugin(plugin);
-	assert.deepEqual(projection.servers["test-plugin__http"], {
-		url: "https://example.com/mcp",
-	});
-	assert.equal(projection.servers["test-plugin__headers"], undefined);
-	assert.equal(projection.servers["test-plugin__legacy"], undefined);
+	assert.deepEqual(
+		projection.servers[qualifyServerName("test.plugin", "http")],
+		{ url: "https://example.com/mcp" },
+	);
+	assert.equal(
+		projection.servers[qualifyServerName("test.plugin", "headers")],
+		undefined,
+	);
+	assert.equal(
+		projection.servers[qualifyServerName("test.plugin", "legacy")],
+		undefined,
+	);
+	assert.equal(
+		projection.servers[qualifyServerName("test.plugin", "dynamic")],
+		undefined,
+	);
 	assert.ok(
 		projection.diagnostics.some((entry) => entry.message.includes("headers")),
 	);
 	assert.ok(
 		projection.diagnostics.some((entry) => entry.message.includes("SSE")),
+	);
+	assert.ok(
+		projection.diagnostics.some((entry) =>
+			entry.message.includes("cannot preserve literally"),
+		),
 	);
 });
 

@@ -121,23 +121,27 @@ function applyExtensions(
 		return [warning("8.1", "ignoring non-object extensions field", { path })];
 	}
 
-	const diagnostics: Diagnostic[] = [];
-	const namespaces: Record<string, Record<string, unknown>> = {};
-	for (const [namespace, entry] of Object.entries(value)) {
-		if (typeof entry === "object" && entry !== null && !Array.isArray(entry)) {
-			namespaces[namespace] = entry as Record<string, unknown>;
-		} else if (namespace === PI_NAMESPACE) {
-			diagnostics.push(
-				warning(
-					"8.1",
-					`ignoring extensions["${namespace}"]: value must be an object`,
-					{ path },
-				),
-			);
-		}
+	const namespaces: Record<string, Record<string, unknown>> =
+		Object.create(null);
+	// §8.1: ignore unimplemented namespaces without validating their values.
+	if (!Object.hasOwn(value, PI_NAMESPACE)) {
+		manifest.extensions = namespaces;
+		return [];
+	}
+	const entry = (value as Record<string, unknown>)[PI_NAMESPACE];
+	if (typeof entry === "object" && entry !== null && !Array.isArray(entry)) {
+		namespaces[PI_NAMESPACE] = entry as Record<string, unknown>;
+		manifest.extensions = namespaces;
+		return [];
 	}
 	manifest.extensions = namespaces;
-	return diagnostics;
+	return [
+		warning(
+			"8.1",
+			`ignoring extensions["${PI_NAMESPACE}"]: value must be an object`,
+			{ path },
+		),
+	];
 }
 
 /** Validate a parsed manifest object. `path` is used only for diagnostics. */
