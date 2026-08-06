@@ -62,7 +62,9 @@ jobs:
       - run: npm ci --ignore-scripts
       - run: npm run typecheck
       - run: npm test
-      - run: npm publish --provenance --access public
+      # Provenance/Sigstore Fulcio TLS fails on this self-hosted Windows
+      # runner (CA_CREATE_SIGNING_CERTIFICATE_ERROR).
+      - run: npm publish --access public
 
       - name: Create GitHub release
         shell: pwsh

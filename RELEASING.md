@@ -30,4 +30,11 @@ In the npm package settings for `pi-agent-plugins`, add a GitHub Actions trusted
    git push origin v0.1.1
    ```
 
-The pinned release workflow validates the tagged commit, publishes to npm with provenance, and creates the GitHub release. Do not push a release tag until npm trusted publishing is configured; npm versions are immutable and a failed workflow should not be retried after publishing that version manually.
+The pinned release workflow validates the tagged commit, publishes to npm,
+and creates the GitHub release. Provenance attestations are omitted because
+Sigstore/Fulcio TLS fails on the self-hosted Windows runner.
+
+Do not push a release tag until npm trusted publishing is configured. npm
+versions are immutable: if publish succeeded, do not retry that version. If
+publish failed before the package was accepted, re-run via workflow_dispatch
+with the same tag (uses the workflow from `main`, checks out the tag).
