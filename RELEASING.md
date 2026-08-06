@@ -1,11 +1,13 @@
 # Releasing
 
-The release workflow publishes with the `NPM_TOKEN` GitHub Actions secret when
-set. If the secret is missing, it falls back to npm trusted publishing (OIDC).
+The release workflow publishes every version to two registries:
+
+- `pi-agent-plugins` on npmjs.org using the `NPM_TOKEN` repository secret.
+- `@blockedpath/pi-agent-plugins` on GitHub Packages using `GITHUB_TOKEN`.
+
+Both publish steps are idempotent: a rerun skips a version that already exists.
 
 ## One-time setup
-
-### Option A — `NPM_TOKEN` secret (recommended on self-hosted)
 
 1. On npmjs.com → **Access Tokens** → create a **Granular Access Token**:
    - Permission: **Read and write** for package `pi-agent-plugins`
@@ -13,16 +15,8 @@ set. If the secret is missing, it falls back to npm trusted publishing (OIDC).
 2. In GitHub: repo **Settings → Secrets and variables → Actions → New repository secret**
    - Name: `NPM_TOKEN`
    - Value: the token (`npm_…`)
-
-### Option B — npm trusted publisher (OIDC, no long-lived token)
-
-In the npm package settings for `pi-agent-plugins`, add a GitHub Actions
-trusted publisher with:
-
-- Organization or user: `BlockedPath`
-- Repository: `pi-agent-plugins`
-- Workflow filename: `release.yml`
-- Environment: leave blank unless the workflow is updated to use one
+3. After the first GitHub Packages publish, open the package settings and set
+   its visibility to **Public**. GitHub defaults new packages to private.
 
 ## Publish a release
 
@@ -43,11 +37,24 @@ trusted publisher with:
    git push origin v0.1.1
    ```
 
-The pinned release workflow validates the tagged commit, publishes to npm,
-and creates the GitHub release. Provenance attestations are omitted because
-Sigstore/Fulcio TLS fails on the self-hosted Windows runner.
+The pinned release workflow validates the tagged commit, publishes to npmjs
+and GitHub Packages, and creates the GitHub release. Provenance attestations
+are omitted because Sigstore/Fulcio TLS fails on the self-hosted Windows
+runner.
 
-Do not push a release tag until npm trusted publishing is configured. npm
-versions are immutable: if publish succeeded, do not retry that version. If
-publish failed before the package was accepted, re-run via workflow_dispatch
-with the same tag (uses the workflow from `main`, checks out the tag).
+Reruns are safe: existing registry versions and GitHub releases are skipped.
+Use workflow_dispatch with the same tag to fill in any missing publish target.
+The workflow itself runs from `main` and checks out the requested tag.
+
+Install from npmjs (default):
+
+```bash
+npm install pi-agent-plugins
+```
+
+Install the GitHub Packages mirror (GitHub authentication may be required):
+
+```bash
+npm install @blockedpath/pi-agent-plugins \
+  --registry=https://npm.pkg.github.com
+```

@@ -25,6 +25,7 @@ jobs:
     permissions:
       contents: write
       id-token: write
+      packages: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -65,26 +66,74 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
-      # Prefer NPM_TOKEN (repo secret). Fall back to OIDC trusted publishing
-      # when the secret is unset. Provenance/Sigstore is omitted: Fulcio TLS
-      # fails on this self-hosted Windows runner.
+      # Provenance/Sigstore is omitted because Fulcio TLS fails on this
+      # self-hosted Windows runner.
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         shell: pwsh
         run: |
-          if ($env:NODE_AUTH_TOKEN) {
-            "//registry.npmjs.org/:_authToken=${env:NODE_AUTH_TOKEN}" |
-              Set-Content -Path .npmrc -Encoding utf8
+          $name = node -p 'require("./package.json").name'
+          $version = node -p 'require("./package.json").version'
+          npm view "${name}@${version}" version `
+            --registry=https://registry.npmjs.org/ *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "${name}@${version} already exists on npm; skipping"
+            exit 0
           }
+          if (-not $env:NODE_AUTH_TOKEN) {
+            Write-Error "NPM_TOKEN secret is required to publish to npm"
+            exit 1
+          }
+          $npmrc = Join-Path $env:RUNNER_TEMP "npmrc-npmjs"
+          "//registry.npmjs.org/:_authToken=${env:NODE_AUTH_TOKEN}" |
+            Set-Content -Path $npmrc -Encoding utf8
+          $env:NPM_CONFIG_USERCONFIG = $npmrc
           npm publish --access public
+          $publishExit = $LASTEXITCODE
+          Remove-Item -Path $npmrc -Force
+          exit $publishExit
+
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $name = "@blockedpath/pi-agent-plugins"
+          $version = node -p 'require("./package.json").version'
+          $npmrc = Join-Path $env:RUNNER_TEMP "npmrc-github"
+          @(
+            "@blockedpath:registry=https://npm.pkg.github.com"
+            "//npm.pkg.github.com/:_authToken=${env:NODE_AUTH_TOKEN}"
+          ) | Set-Content -Path $npmrc -Encoding utf8
+          $env:NPM_CONFIG_USERCONFIG = $npmrc
+          npm view "${name}@${version}" version `
+            --registry=https://npm.pkg.github.com *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host (
+              "${name}@${version} already exists on GitHub Packages; " +
+              "skipping"
+            )
+            Remove-Item -Path $npmrc -Force
+            exit 0
+          }
+          npm pkg set "name=${name}"
+          npm publish --registry=https://npm.pkg.github.com
+          $publishExit = $LASTEXITCODE
+          Remove-Item -Path $npmrc -Force
+          exit $publishExit
 
       - name: Create GitHub release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create "$env:RELEASE_TAG"
-          --verify-tag
-          --generate-notes
-          --title "pi-agent-plugins $env:RELEASE_TAG"
+        run: |
+          gh release view "$env:RELEASE_TAG" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "GitHub release $env:RELEASE_TAG already exists"
+            exit 0
+          }
+          gh release create "$env:RELEASE_TAG" `
+            --verify-tag `
+            --generate-notes `
+            --title "pi-agent-plugins $env:RELEASE_TAG"
