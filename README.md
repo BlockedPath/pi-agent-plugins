@@ -1,3 +1,4 @@
+[![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/BlockedPath/pi-agent-plugins?utm_source=oss&utm_medium=github&utm_campaign=BlockedPath%2Fpi-agent-plugins&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
 [![npm version](https://img.shields.io/npm/v/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
 [![npm downloads](https://img.shields.io/npm/dm/pi-agent-plugins)](https://www.npmjs.com/package/pi-agent-plugins)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
