@@ -13,9 +13,10 @@ on:
 env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
+# Include run_id so zombie queued re-runs cannot block new releases.
 concurrency:
-  group: release-${{ inputs.tag || github.ref }}
-  cancel-in-progress: false
+  group: release-${{ inputs.tag || github.ref_name }}-${{ github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   release:
