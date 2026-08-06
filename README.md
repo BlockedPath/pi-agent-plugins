@@ -23,7 +23,6 @@
  riptlang.org/)
    [![pi
  compatible](https://img.shields.io/badge/pi-Compatible-blueviolet)](https://pi.dev)
-# pi-agent-plugins
 
 ![Agent Plugins gallery artwork](./assets/gallery.jpg)
 
