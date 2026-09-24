@@ -93,11 +93,25 @@ Install sources:
 
 ```bash
 /plugin install npm:@acme/tools@1.2.3
+/plugin install acme/tools
+/plugin install acme/plugins:plugins/infra-aws
+/plugin install acme/plugins:plugins/infra-aws@main
 /plugin install github.com/acme/tools@v1.2.3
 /plugin install https://github.com/acme/tools.git
 /plugin install git:git@github.com:acme/tools.git@v1.2.3
 /plugin install ./local-plugin
 ```
+
+The `owner/repo[:subdir][@ref]` shorthand installs a plugin from a GitHub
+repository, optionally from a subdirectory of a monorepo. Subdirectory
+selection is currently supported only for this GitHub shorthand, not for
+arbitrary Git URLs. Only the selected directory is copied into the install
+root. Because a bare `owner/repo` is read as a GitHub source, a local
+directory must be given as an explicit path (`./`, `../`, `/`, or `~`).
+Private repositories require a configured noninteractive Git credential
+helper (for example `gh auth login && gh auth setup-git`); installation never
+prompts, so a missing credential fails fast. This shorthand is a client
+installation convenience, not part of Agent Plugins 1.0 conformance.
 
 npm downloads use `npm pack --ignore-scripts`; package lifecycle scripts are not executed during installation. Git uses a shallow, non-interactive clone. Every source is staged and its root manifest is validated before it reaches the install directory.
 

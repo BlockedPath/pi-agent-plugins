@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add `owner/repo[:subdir][@ref]` GitHub shorthand to `/plugin install`,
+  installing a plugin from a subdirectory of a repository. The selected
+  directory is resolved with filesystem containment checks after clone, and
+  only that directory is copied into the install root. This is client
+  installation policy, not Agent Plugins 1.0 conformance.
+
 ## 0.1.8
 
 - Release from the self-hosted Windows runner using an `NPM_TOKEN` secret

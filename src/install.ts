@@ -23,13 +23,14 @@ import { promisify } from "node:util";
 import { x as extractTar } from "tar";
 
 import { loadManifest } from "./manifest.ts";
+import { isContainedResolved, resolveExisting, resolveInRoot } from "./paths.ts";
 import { userPluginsDir } from "./paths-client.ts";
 import type { PluginManifest } from "./types.ts";
 
 const execFileAsync = promisify(execFile);
 
 export type InstallSource =
-	| { kind: "git"; url: string; ref?: string }
+	| { kind: "git"; url: string; ref?: string; subdir?: string }
 	| { kind: "npm"; spec: string }
 	| { kind: "path"; path: string };
 
@@ -42,8 +43,9 @@ export interface InstallResult {
 /**
  * Parse an install specifier.
  *
- * Accepted: `npm:pkg@version`, `github.com/user/repo`, `https://…`,
- * `git@host:path`, `git:…`, an optional `@ref` suffix, and local paths.
+ * Accepted: `npm:pkg@version`, `owner/repo[:subdir][@ref]` GitHub shorthand,
+ * `github.com/user/repo`, `https://…`, `git@host:path`, `git:…`, an optional
+ * `@ref` suffix, and local paths.
  */
 export function parseSource(spec: string): InstallSource | { error: string } {
 	const trimmed = spec.trim();
@@ -51,6 +53,11 @@ export function parseSource(spec: string): InstallSource | { error: string } {
 	if (trimmed.startsWith("npm:")) return parseNpmSource(trimmed);
 	if (isLocalSource(trimmed))
 		return { kind: "path", path: resolve(expandHome(trimmed)) };
+	// GitHub `owner/repo` shorthand is tried before the generic Git parser: only
+	// this form carries an optional `:subdir`. A non-shorthand input (e.g. a
+	// hostname-shaped `host.tld/path`) returns null and falls through unchanged.
+	const shorthand = parseGitShorthand(trimmed);
+	if (shorthand) return shorthand;
 	return parseGitSource(trimmed, spec);
 }
 
@@ -68,6 +75,68 @@ function expandHome(value: string): string {
 	return value.startsWith("~")
 		? join(process.env.HOME ?? "", value.slice(1))
 		: value;
+}
+
+// Owner uses GitHub's account-name rules (letters, digits, hyphen — no dot),
+// which is what keeps this form distinct from a hostname-shaped generic Git
+// source. Repo additionally allows `.` and `_`.
+const SHORTHAND_REPO = /^([A-Za-z0-9-]+)\/([A-Za-z0-9._-]+)$/;
+
+/**
+ * Parse GitHub `owner/repo[:subdir][@ref]` shorthand.
+ *
+ * Returns a Git source, an `{ error }` when the input is shorthand-shaped but
+ * its subdirectory is malformed, or `null` when the input is not shorthand at
+ * all (so the caller falls through to the generic Git parser).
+ */
+function parseGitShorthand(
+	value: string,
+): InstallSource | { error: string } | null {
+	// `@` cannot appear in an owner, repo, or a valid subdir, so the first `@`
+	// unambiguously begins the ref (which may itself contain `/`).
+	const atIndex = value.indexOf("@");
+	const beforeRef = atIndex === -1 ? value : value.slice(0, atIndex);
+	const ref = atIndex === -1 ? undefined : value.slice(atIndex + 1) || undefined;
+
+	const colonIndex = beforeRef.indexOf(":");
+	const repoPart = colonIndex === -1 ? beforeRef : beforeRef.slice(0, colonIndex);
+	const subdir = colonIndex === -1 ? undefined : beforeRef.slice(colonIndex + 1);
+
+	const match = SHORTHAND_REPO.exec(repoPart);
+	if (!match) return null;
+
+	const owner = match[1];
+	const rawRepo = match[2];
+	if (!owner || !rawRepo) return null;
+	const repo = rawRepo.endsWith(".git") ? rawRepo.slice(0, -4) : rawRepo;
+	// `.` and `..` are valid regex matches but not real repositories; fall
+	// through so the generic parser reports an unrecognized source.
+	if (repo.length === 0 || repo === "." || repo === "..") return null;
+
+	if (subdir !== undefined && !isValidSubdir(subdir)) {
+		return { error: `invalid plugin subdirectory: ${subdir}` };
+	}
+
+	const url = `https://github.com/${owner}/${repo}`;
+	return {
+		kind: "git",
+		url,
+		...(subdir !== undefined ? { subdir } : {}),
+		...(ref ? { ref } : {}),
+	};
+}
+
+/**
+ * A shorthand subdirectory is a forward-slash relative path with no traversal.
+ * Rejecting `:` and `\` also excludes Windows drive and UNC forms; rejecting
+ * empty segments excludes absolute, trailing-slash, and repeated-separator
+ * paths.
+ */
+function isValidSubdir(subdir: string): boolean {
+	if (subdir.includes("\\") || subdir.includes(":") || subdir.includes("\0"))
+		return false;
+	const segments = subdir.split("/");
+	return segments.every((seg) => seg !== "" && seg !== "." && seg !== "..");
 }
 
 function parseGitSource(
@@ -114,24 +183,43 @@ export async function install(
 	const staging = mkdtempSync(join(tmpdir(), "pi-agent-plugin-"));
 
 	try {
-		const staged = join(staging, "plugin");
+		// The fetched source and the selected plugin root are distinct: a Git
+		// source may name a subdirectory, so we clone the whole repository and
+		// then resolve the one directory to install.
+		let selectedRoot: string;
 		if (source.kind === "git") {
-			await cloneGit(source, staged, options.signal);
+			const fetchedRoot = join(staging, "repository");
+			await cloneGit(source, fetchedRoot, options.signal);
+			selectedRoot = resolveGitPluginRoot(fetchedRoot, source.subdir);
 		} else if (source.kind === "npm") {
-			await packNpm(source.spec, staging, staged, options.signal);
+			selectedRoot = join(staging, "plugin");
+			await packNpm(source.spec, staging, selectedRoot, options.signal);
 		} else {
 			if (!existsSync(source.path) || !statSync(source.path).isDirectory()) {
 				throw new Error(`not a directory: ${source.path}`);
 			}
-			cpSync(source.path, staged, { recursive: true, dereference: false });
+			selectedRoot = join(staging, "plugin");
+			cpSync(source.path, selectedRoot, {
+				recursive: true,
+				dereference: false,
+				verbatimSymlinks: true,
+			});
 		}
 
 		// §4.1/§5.1: a plugin without a valid root manifest is not a plugin.
-		const manifestPath = join(staged, "plugin.json");
+		const manifestPath = join(selectedRoot, "plugin.json");
 		if (!existsSync(manifestPath)) {
 			throw new Error(
 				"source has no plugin.json at its root; not an Agent Plugin",
 			);
+		}
+		// The manifest we validate must be the manifest we install. A symlinked
+		// plugin.json can point outside the selected root (e.g. at a monorepo
+		// sibling); loadManifest would follow it, but cpSync copies the link
+		// verbatim and it dangles once staging is torn down. Reject that here so
+		// a validated install cannot become an unloadable one.
+		if (!isContainedResolved(selectedRoot, manifestPath)) {
+			throw new Error("plugin.json resolves outside the plugin root");
 		}
 		const { value: manifest, diagnostics } = loadManifest(manifestPath);
 		if (!manifest) {
@@ -152,12 +240,45 @@ export async function install(
 		mkdirSync(targetRoot, { recursive: true });
 		// Copy rather than rename: staging is in the OS temp dir, which is
 		// frequently a different filesystem from the agent directory.
-		cpSync(staged, destination, { recursive: true, dereference: false });
+		// verbatimSymlinks keeps relative links relative: without it, cpSync
+		// rewrites them to absolute paths into the staging dir, which dangle
+		// once staging is deleted.
+		cpSync(selectedRoot, destination, {
+			recursive: true,
+			dereference: false,
+			verbatimSymlinks: true,
+		});
 
 		return { manifest, root: destination, source };
 	} finally {
 		rmSync(staging, { recursive: true, force: true });
 	}
+}
+
+/**
+ * Resolve the plugin directory to install from a cloned repository.
+ *
+ * With no subdirectory, the repository root is the plugin root. With one, the
+ * candidate must resolve inside the filesystem-resolved repository root (via the
+ * shared containment helpers, so a symlink cannot escape), exist, and be a
+ * directory. Errors distinguish containment escape, a missing path, and the
+ * wrong filesystem kind.
+ */
+export function resolveGitPluginRoot(
+	repositoryRoot: string,
+	subdir: string | undefined,
+): string {
+	const root = resolveExisting(repositoryRoot);
+	if (subdir === undefined) return root;
+
+	const candidate = resolveInRoot(root, subdir);
+	if (!candidate)
+		throw new Error(`plugin subdirectory escapes the repository: ${subdir}`);
+	if (!existsSync(candidate))
+		throw new Error(`plugin subdirectory not found: ${subdir}`);
+	if (!statSync(candidate).isDirectory())
+		throw new Error(`plugin subdirectory is not a directory: ${subdir}`);
+	return resolveExisting(candidate);
 }
 
 async function cloneGit(

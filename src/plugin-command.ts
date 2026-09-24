@@ -140,7 +140,7 @@ async function handleInstall(
 	if (!spec) {
 		fail(
 			ctx,
-			"Usage: /plugin install <npm:package | git-url | github.com/user/repo | ./path>",
+			"Usage: /plugin install <npm:package | owner/repo[:path][@ref] | git-url | github.com/user/repo | ./path>",
 		);
 		return;
 	}
